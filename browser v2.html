@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucas Browser</title>
+    <meta name="theme-color" content="#ff66cc">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, pink, purple);
+            color: white;
+        }
+        header {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .tabs-container {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .tab {
+            background: white;
+            color: black;
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .tab.active {
+            background: blue;
+            color: white;
+        }
+        .close-btn {
+            margin-left: 8px;
+            cursor: pointer;
+            color: red;
+            font-weight: bold;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        iframe {
+            width: 100%;
+            height: 80vh;
+            border: none;
+        }
+        #url-input {
+            width: 100%;
+            padding: 10px;
+            margin: 0;
+            display: block;
+            box-sizing: border-box;
+        }
+        .settings-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <header>Lucas Browser</header>
+    <div class="tabs-container" id="tabs-container"></div>
+    <div class="controls">
+        <button onclick="goBack()">⬅️</button>
+        <button onclick="goForward()">➡️</button>
+        <button onclick="reloadPage()">🔄</button>
+        <button onclick="addTab()">➕ New Tab</button>
+        <button onclick="renameTab()">✏️ Rename Tab</button>
+        <button onclick="toggleFullscreen()">🖥️ Fullscreen</button>
+        <button onclick="toggleSettings()">⚙️ Settings</button>
+    </div>
+    <input type="text" id="url-input" placeholder="Enter URL..." onkeydown="handleEnter(event)">
+    <iframe id="browser-frame"></iframe>
+    
+    <div class="settings-popup" id="settings-popup">
+        <h3>Settings</h3>
+        <label><input type="checkbox" id="auto-rename" checked> Auto Rename Tabs</label><br>
+        <label><input type="checkbox" id="show-favicons" checked> Show Favicons</label><br>
+        <label><input type="checkbox" id="show-tab-list" checked> Show Tab List</label><br>
+        <button onclick="toggleSettings()">Close</button>
+    </div>
+    
+    <script>
+        let tabs = [];
+        let activeTabIndex = 0;
+        let settings = {
+            autoRename: true,
+            showFavicons: true,
+            showTabList: true
+        };
+
+        function toggleSettings() {
+            const popup = document.getElementById("settings-popup");
+            popup.style.display = popup.style.display === "block" ? "none" : "block";
+        }
+
+        function applySettings() {
+            settings.autoRename = document.getElementById("auto-rename").checked;
+            settings.showFavicons = document.getElementById("show-favicons").checked;
+            settings.showTabList = document.getElementById("show-tab-list").checked;
+            updateTabs();
+        }
+
+        document.querySelectorAll(".settings-popup input").forEach(input => {
+            input.addEventListener("change", applySettings);
+        });
+
+        function addTab() {
+            const tabData = { name: "New Tab", url: "", favicon: "" };
+            tabs.push(tabData);
+            updateTabs();
+            setActiveTab(tabs.length - 1);
+        }
+
+        function updateTabs() {
+            const container = document.getElementById("tabs-container");
+            container.innerHTML = "";
+            if (!settings.showTabList) return;
+            
+            tabs.forEach((tab, index) => {
+                const tabElement = document.createElement("div");
+                tabElement.className = "tab" + (index === activeTabIndex ? " active" : "");
+                
+                // Show favicon if enabled
+                if (settings.showFavicons && tab.favicon) {
+                    const faviconImg = document.createElement("img");
+                    faviconImg.src = tab.favicon;
+                    faviconImg.alt = "Favicon";
+                    faviconImg.style.width = "16px";
+                    faviconImg.style.height = "16px";
+                    tabElement.appendChild(faviconImg);
+                }
+
+                tabElement.appendChild(document.createTextNode(tab.name));
+                tabElement.onclick = () => setActiveTab(index);
+                
+                const closeButton = document.createElement("span");
+                closeButton.className = "close-btn";
+                closeButton.textContent = "✖";
+                closeButton.onclick = function(event) {
+                    event.stopPropagation();
+                    closeTab(index);
+                };
+                tabElement.appendChild(closeButton);
+                container.appendChild(tabElement);
+            });
+        }
+
+        function setActiveTab(index) {
+            activeTabIndex = index;
+            document.getElementById("browser-frame").src = tabs[index].url || "about:blank";
+            document.getElementById("url-input").value = tabs[index].url;
+            updateTabs();
+
+            if (settings.autoRename) {
+                // Extract hostname and remove .com
+                let hostname = new URL(tabs[index].url).hostname.replace('.com', '');
+                
+                // Capitalize the first letter
+                hostname = hostname.charAt(0).toUpperCase() + hostname.slice(1);
+                
+                tabs[index].name = hostname; // Update the tab name
+                updateTabs();
+            }
+        }
+
+        function closeTab(index) {
+            tabs.splice(index, 1);
+            activeTabIndex = Math.max(0, activeTabIndex - 1);
+            updateTabs();
+            if (tabs.length > 0) setActiveTab(activeTabIndex);
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
+                let url = document.getElementById("url-input").value;
+
+                // Check if the URL starts with http:// or https://, if not, add https://
+                if (!/^https?:\/\//i.test(url)) {
+                    url = "https://" + url;
+                }
+
+                if (!url) return;
+                tabs[activeTabIndex].url = url;
+                setActiveTab(activeTabIndex);
+
+                // Optionally, you can update the input field to show the URL without https://
+                const visibleUrl = url.replace(/^https?:\/\//, '');
+                document.getElementById("url-input").value = visibleUrl;
+            }
+        }
+
+        function toggleFullscreen() {
+            const iframe = document.getElementById("browser-frame");
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                iframe.requestFullscreen();
+            }
+        }
+
+        addTab();
+    </script>
+</body>
+</html>
