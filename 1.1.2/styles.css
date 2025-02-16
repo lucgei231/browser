@@ -1,0 +1,63 @@
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s, background-image 0.3s;
+}
+
+body.light-mode {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+body.dark-mode {
+    background-color: #2c2c2c;
+    color: #ffffff;
+}
+
+body.gradient-mode {
+    background-image: linear-gradient(135deg, #f06, #c86);
+}
+
+.menu-bar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    z-index: 1000;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin: 0 10px;
+    width: 300px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background-color: #444;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+button:hover {
+    background-color: #666;
+    transform: scale(1.1);
+}
+
+iframe {
+    position: fixed;
+    top: 50px; /* Space for menu bar */
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px); /* Subtract height of menu bar */
+    border: none; /* Remove the outline */
+}
